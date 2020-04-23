@@ -10,11 +10,11 @@ import torchvision
 import numpy as np
 import torch.nn as nn
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 ##### Define Data Loader #####
 class MRI_Loader(Dataset):
     def __init__(self):
-        root_dir = '/home/group3/Data_Original'
+        root_dir = 'G:\MIP_MRI_Image_Analysis\Data_Original'
         sub_dir = os.listdir(root_dir)
         self.data = []
         self.labels = []
@@ -44,61 +44,60 @@ class MRI_Loader(Dataset):
 
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-model = MRINet()
-print("Starting Data Loader")
-train_loader = DataLoader(MRI_Loader(),batch_size = 4)
-print("Done with Data Loader")
+    model = MRINet()
+    print("Starting Data Loader")
+    train_loader = DataLoader(MRI_Loader(),batch_size = 4)
+    print("Done with Data Loader")
 
-if torch.cuda.is_available():
-    use_gpu = True
-    print("Using GPU")
-else:
-    use_gpu = False
-    print("Using CPU")
+    if torch.cuda.is_available():
+        use_gpu = True
+        print("Using GPU")
+    else:
+        use_gpu = False
+        print("Using CPU")
 
-lossDict = dict()
-accuracyDict = dict()
-trainLoss = []
-accur = []
+    lossDict = dict()
+    accuracyDict = dict()
+    trainLoss = []
+    accur = []
 
-#### GPU STUFF ###
-model = model.cuda()
-optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.7)
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-#### Code for training #####
-def train(epoch):
-    model.train()
-    correct = 0
-    training_loss = 0
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = Variable(data), Variable(target)
-        if use_gpu:
-            data = data.cuda()
-            target = target.cuda()
-        optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-        max_index = output.max(dim=1)[1]
-        correct += (max_index == target).sum()
-        training_loss += loss.item()
+    #### GPU STUFF ###
+    model = model.cuda()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    #### Code for training #####
+    def train(epoch):
+        model.train()
+        correct = 0
+        training_loss = 0
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = Variable(data), Variable(target)
+            if use_gpu:
+                data = data.cuda()
+                target = target.cuda()
+            optimizer.zero_grad()
+            output = model(data)
+            loss = F.nll_loss(output, target)
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            max_index = output.max(dim=1)[1]
+            correct += (max_index == target).sum()
+            training_loss += loss.item()
 
-    print('\nTesting set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        training_loss / len(train_loader.dataset), correct, len(train_loader.dataset),
-        100. * correct / len(train_loader.dataset)))
+        print('\nTesting set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+            training_loss / len(train_loader.dataset), correct, len(train_loader.dataset),
+            100. * correct / len(train_loader.dataset)))
 
-    lossDict[epoch] = training_loss / len(train_loader.dataset)
-    accuracyDict[epoch] = 100. * correct / len(train_loader.dataset)
-    trainLoss.append(lossDict[epoch])
-    accur.append(accuracyDict[epoch])
+        lossDict[epoch] = training_loss / len(train_loader.dataset)
+        accuracyDict[epoch] = 100. * correct / len(train_loader.dataset)
+        trainLoss.append(lossDict[epoch])
+        accur.append(accuracyDict[epoch])
 
-for epoch in range(10):
-    train(epoch)
-    print("Finished Training for",epoch,"epoch")
-    # model_file = os.path.join(modelFolder, 'model_' + str(epoch) + '.pth')
+    for epoch in range(10):
+        train(epoch)
+        print("Finished Training for",epoch,"epoch")
+        # model_file = os.path.join(modelFolder, 'model_' + str(epoch) + '.pth')
 
-print(accur)
+    print(accur)
