@@ -64,21 +64,22 @@ def occlusion(model, image_tensor, target_class=None, size=5, stride=5, occlusio
     if apply_softmax:
         output = F.softmax(output)
 
+    print(image_tensor.shape)
     output_class = output.max(1)[1].data.numpy()[0]
     if verbose: print('Image was classified as', output_class, 'with probability', output.max(1)[0].data[0])
     if target_class is None:
         target_class = output_class
     unoccluded_prob = output.data[0, target_class]
 
-    width = image_tensor.shape[1]
-    height = image_tensor.shape[2]
+    width = image_tensor.shape[2]
+    height = image_tensor.shape[3]
 
     xs = range(0, width, stride)
     ys = range(0, height, stride)
 
     # TODO: Maybe use torch tensor here.
     if three_d:
-        depth = image_tensor.shape[3]
+        depth = image_tensor.shape[4]
         zs = range(0, depth, stride)
         relevance_map = np.zeros((len(xs), len(ys), len(zs)))
     else:
@@ -111,7 +112,7 @@ def occlusion(model, image_tensor, target_class=None, size=5, stride=5, occlusio
                     # if verbose: print('Occluding from x={} to x={} and y={} to y={} and z={} to z={}'.format(x_from, x_to, y_from, y_to, z_from, z_to))
 
                     image_tensor_occluded.copy_(image_tensor)
-                    image_tensor_occluded[:, x_from:x_to, y_from:y_to, z_from:z_to] = occlusion_value
+                    image_tensor_occluded[:,:, x_from:x_to, y_from:y_to, z_from:z_to] = occlusion_value
 
                     # TODO: Maybe run this batched.
                     output = model(Variable(image_tensor_occluded, requires_grad=False))
@@ -146,7 +147,7 @@ model = MRINet()
 model.load_state_dict(torch.load(model_file))
 model.eval()
 model.cuda()
-image_path = r'G:\MIP_MRI_Image_Analysis\Interpretation_Files\CN_Test.nii'
+image_path = r'G:\MIP_MRI_Image_Analysis\Interpretation_Files\AD_Test.nii'
 nii_image = nib.load(image_path)
 mri_image = np.array(np.nan_to_num(nii_image.get_fdata()))
 img_numpy_array = mri_image[None]
