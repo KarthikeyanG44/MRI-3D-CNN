@@ -21,14 +21,9 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision
 import nibabel as nib
 
-model_file = ''
-model = MRINet()
-model.load_state_dict(torch.load(model_file))
-model.eval()
 
-
-def occlusion(model, image_tensor, target_class=None, size=25, stride=25, occlusion_value=0, apply_softmax=True,
-              three_d=True, resize=True, cuda=True, verbose=False):
+def occlusion(model, image_tensor, target_class=None, size=5, stride=5, occlusion_value=0, apply_softmax=True,
+              three_d=True, resize=True, cuda=True, verbose=True):
     """
     Perform occlusion (Zeiler & Fergus 2014) to determine the relevance of each image pixel
     for the classification decision. Return a relevance heatmap over the input image.
@@ -64,7 +59,8 @@ def occlusion(model, image_tensor, target_class=None, size=25, stride=25, occlus
     image_tensor = torch.Tensor(image_tensor)  # convert numpy or list to tensor
     if cuda:
         image_tensor = image_tensor.cuda()
-    output = model(Variable(image_tensor[None], requires_grad=False)).cpu()
+    image_tensor = Variable(image_tensor, requires_grad=False)
+    output = model(image_tensor).cpu()
     if apply_softmax:
         output = F.softmax(output)
 
@@ -118,7 +114,7 @@ def occlusion(model, image_tensor, target_class=None, size=25, stride=25, occlus
                     image_tensor_occluded[:, x_from:x_to, y_from:y_to, z_from:z_to] = occlusion_value
 
                     # TODO: Maybe run this batched.
-                    output = model(Variable(image_tensor_occluded[None], requires_grad=False))
+                    output = model(Variable(image_tensor_occluded, requires_grad=False))
                     if apply_softmax:
                         output = F.softmax(output)
 
@@ -131,7 +127,7 @@ def occlusion(model, image_tensor, target_class=None, size=25, stride=25, occlus
                 image_tensor_occluded[:, x_from:x_to, y_from:y_to] = occlusion_value
 
                 # TODO: Maybe run this batched.
-                output = model(Variable(image_tensor_occluded[None], requires_grad=False))
+                output = model(Variable(image_tensor_occluded, requires_grad=False))
                 if apply_softmax:
                     output = F.softmax(output)
 
@@ -139,19 +135,26 @@ def occlusion(model, image_tensor, target_class=None, size=25, stride=25, occlus
                 relevance_map[i_x, i_y] = unoccluded_prob - occluded_prob
 
     relevance_map = np.maximum(relevance_map, 0)
-
     if resize:
-        relevance_map = utils.resize_image(relevance_map, image_tensor.shape[1:])
+        relevance_map = utils.resize_image(relevance_map, image_tensor.shape[2:])
 
     return relevance_map
 
-image_path = ''
+
+model_file = r'G:\MIP_MRI_Image_Analysis\Eval_Files\No_Dropout_2_Class\model_19.pth'
+model = MRINet()
+model.load_state_dict(torch.load(model_file))
+model.eval()
+model.cuda()
+image_path = r'G:\MIP_MRI_Image_Analysis\Interpretation_Files\CN_Test.nii'
 nii_image = nib.load(image_path)
-img_numpy_array = np.array(np.nan_to_num(nii_image.get_fdata()))
-img_numpy_array = img_numpy_array[None]
+mri_image = np.array(np.nan_to_num(nii_image.get_fdata()))
+img_numpy_array = mri_image[None]
 img_numpy_array = torch.FloatTensor(img_numpy_array)
 img_numpy_array = img_numpy_array.view(1, img_numpy_array.size(0), img_numpy_array.size(1), img_numpy_array.size(2),img_numpy_array.size(3))
-image_class = 0
-
-interpret_map = occlusion(model,img_numpy_array,image_class)
-utils.plot_slices(img_numpy_array,interpret_map)
+image_class = 1
+# AD - 0
+# MCI - 1
+# CN - 2
+interpret_map = occlusion(model,img_numpy_array,image_class,cuda=True,verbose=True)
+utils.plot_slices(mri_image,overlay=interpret_map)

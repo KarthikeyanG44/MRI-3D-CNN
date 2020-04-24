@@ -92,7 +92,7 @@ red_to_alpha_cmap[:, -1] = np.linspace(1, 0, 256)  # cmap.N-20)  # alpha values
 red_to_alpha_cmap = mpl.colors.ListedColormap(red_to_alpha_cmap)
 
 
-def plot_slices(struct_arr, num_slices=7, cmap='gray', vmin=None, vmax=None, overlay=None,
+def plot_slices(struct_arr, num_slices=12, cmap='gray', vmin=None, vmax=None, overlay=None,
                 overlay_cmap=alpha_to_red_cmap, overlay_vmin=None, overlay_vmax=None):
     """
     Plot equally spaced slices of a 3D image (and an overlay) along every axis
@@ -137,6 +137,7 @@ def plot_slices(struct_arr, num_slices=7, cmap='gray', vmin=None, vmax=None, ove
                 plt.imshow(sp.ndimage.rotate(np.take(overlay, i_slice, axis=axis), 90), cmap=overlay_cmap,
                            vmin=overlay_vmin, vmax=overlay_vmax, interpolation=None)
 
+    plt.show()
 
 def animate_slices(struct_arr, overlay=None, axis=0, reverse_direction=False, interval=40, vmin=None, vmax=None,
                    overlay_vmin=None, overlay_vmax=None):

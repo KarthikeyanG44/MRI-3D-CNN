@@ -14,12 +14,12 @@ class MRINet(nn.Module):
         self.Conv_3_bn = nn.BatchNorm3d(32)
         self.Conv_4 = nn.Conv3d(32, 64, 3,stride=1)
         self.Conv_4_bn = nn.BatchNorm3d(64)
-        # self.dropout = nn.Dropout3d(p = 0.2)
+        # self.dropout = nn.Dropout3d(p = 0.6)
         self.dense_1 = nn.Linear(64*1*2*2,64)
         self.dense_2 = nn.Linear(64, 32)
         self.dense_3 = nn.Linear(32,16)
         self.dense_4 = nn.Linear(16,8)
-        self.dense_5 = nn.Linear(8,3)
+        self.dense_5 = nn.Linear(8,2)
         self.relu = nn.ReLU()
 
     def forward(self,x):
